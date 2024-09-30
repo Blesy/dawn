@@ -1,0 +1,162 @@
+{% stylesheet %}
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .upload-container {
+    margin-bottom: 20px;
+  }
+
+  .drop-area {
+    width: 80%;
+    height: 400px;
+    border: 2px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .drop-area img {
+    position: absolute;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+  }
+
+  .controls label {
+    margin-bottom: 5px;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  document.getElementById('imageUpload').addEventListener('change', function (event) {
+    const files = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.draggable = true;
+          img.classList.add('uploadedImage');
+          img.onload = function () {
+            addResizeControls(img, file.name, img.naturalWidth, img.naturalHeight);
+          };
+          document.getElementById('dropArea').appendChild(img);
+          addDragAndDropListeners(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  });
+
+  function addDragAndDropListeners(img) {
+    img.addEventListener('dragstart', function (event) {
+      event.dataTransfer.setData('text/plain', null);
+      img.classList.add('dragging');
+    });
+
+    img.addEventListener('dragend', function (event) {
+      img.classList.remove('dragging');
+    });
+
+    const dropArea = document.getElementById('dropArea');
+    dropArea.addEventListener('dragover', function (event) {
+      event.preventDefault();
+    });
+
+    dropArea.addEventListener('drop', function (event) {
+      event.preventDefault();
+      const draggingImg = document.querySelector('.dragging');
+      const x = event.clientX - dropArea.offsetLeft - draggingImg.width / 2;
+      const y = event.clientY - dropArea.offsetTop - draggingImg.height / 2;
+      draggingImg.style.left = `${x}px`;
+      draggingImg.style.top = `${y}px`;
+    });
+  }
+
+  function addResizeControls(img, fileName, naturalWidth, naturalHeight) {
+    const controls = document.getElementById('controls');
+
+    const aspectRatio = naturalWidth / naturalHeight;
+
+    const widthLabel = document.createElement('label');
+    widthLabel.textContent = `${fileName} Ancho: `;
+    const widthInput = document.createElement('input');
+    widthInput.type = 'number';
+    widthInput.placeholder = 'Ancho';
+    widthInput.value = naturalWidth;
+    widthInput.addEventListener('input', function () {
+      img.style.width = `${widthInput.value}px`;
+      if (keepAspectRatio.checked) {
+        heightInput.value = Math.round(widthInput.value / aspectRatio);
+        img.style.height = `${heightInput.value}px`;
+      }
+    });
+    widthLabel.appendChild(widthInput);
+
+    const heightLabel = document.createElement('label');
+    heightLabel.textContent = `${fileName} Alto: `;
+    const heightInput = document.createElement('input');
+    heightInput.type = 'number';
+    heightInput.placeholder = 'Alto';
+    heightInput.value = naturalHeight;
+    heightInput.addEventListener('input', function () {
+      img.style.height = `${heightInput.value}px`;
+      if (keepAspectRatio.checked) {
+        widthInput.value = Math.round(heightInput.value * aspectRatio);
+        img.style.width = `${widthInput.value}px`;
+      }
+    });
+    heightLabel.appendChild(heightInput);
+
+    const aspectRatioLabel = document.createElement('label');
+    const keepAspectRatio = document.createElement('input');
+    keepAspectRatio.type = 'checkbox';
+    keepAspectRatio.checked = true;
+    aspectRatioLabel.textContent = 'Mantener aspecto';
+    aspectRatioLabel.appendChild(keepAspectRatio);
+
+    controls.appendChild(widthLabel);
+    controls.appendChild(heightLabel);
+    controls.appendChild(aspectRatioLabel);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "test",
+  "tag": "section",
+  "class": "section",
+  "settings": [],
+  "presets": [
+    {
+      "name": "test",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}
+
+<div id="test-{{ section.id }}">
+  <div class="upload-container">
+    <input type="file" id="imageUpload" accept="image/*" multiple>
+  </div>
+  <div class="drop-area" id="dropArea">
+    <p>Arrastre y suelte la imagen aquí</p>
+  </div>
+  <div class="controls" id="controls"></div>
+</div>
